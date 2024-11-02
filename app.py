@@ -11,6 +11,7 @@ engine = sqlalchemy.create_engine("sqlite:///z.db", echo=True)
 events.meta.create_all(engine)
 
 te = events.timed_events
+we = events.weekly_events
 conn = engine.connect()
 
 
