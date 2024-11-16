@@ -79,7 +79,7 @@ def fetch_all_events():
 
 @app.get("/top_events")
 def fetch_sorted_events():
-    results = conn.execute(te.select().order_by(te.c.end_date).limit(10))
+    results = conn.execute(te.select().order_by(te.c.end_date).where(te.c.is_completed != 1).limit(5))
     conn.execute(te.delete().where(te.c.end_date < datetime.datetime.now()))
     conn.commit()
     current_events = []
@@ -114,6 +114,13 @@ def fetch_event(id: int):
         "game_type": game_type,
         "is_completed": is_completed,
     }
+
+@app.delete("/{id}")
+def delete_event(id: int):
+    conn.execute(te.delete().where(te.c.id == id))
+    conn.commit()
+    return "Success"
+
 
 if __name__ == "__main__":
     import uvicorn
