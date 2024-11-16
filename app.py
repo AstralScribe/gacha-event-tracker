@@ -1,41 +1,29 @@
 import datetime
-from typing import Literal, Optional
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, Request
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+
 import sqlalchemy
 
-
-import events
+import database
+from models import GameEvents, UpdateData
 
 engine = sqlalchemy.create_engine("sqlite:///z.db", echo=True)
-events.meta.create_all(engine)
+templates = Jinja2Templates(directory="templates")
+database.meta.create_all(engine)
 
-te = events.timed_events
-we = events.weekly_events
+te = database.timed_events
+we = database.weekly_events
 conn = engine.connect()
-
-
-class GameEvents(BaseModel):
-    game_name: str
-    event_name: str
-    is_completed: bool = False
-    game_type: Literal["long", "short"]
-    end_date: Optional[datetime.date] = None
-    time_left: Optional[int] = None
-
-
-class UpdateData(BaseModel):
-    id: int
-    is_completed: bool
-
 
 app = FastAPI()
 
 
-@app.get("/")
-def index():
-    return "main.html"
-
+@app.get("/", response_class=HTMLResponse)
+async def read_item(request: Request):
+    return templates.TemplateResponse(
+        request=request, name="main.html"
+    )
 
 @app.post("/add_events")
 def add_events(item_data: GameEvents):
@@ -68,8 +56,8 @@ def update_status(data: UpdateData):
     # fmt: on
 
 
-@app.get("/events")
-def fetch_sorted_events():
+@app.get("/all_events")
+def fetch_all_events():
     results = conn.execute(te.select())
     conn.execute(te.delete().where(te.c.end_date < datetime.datetime.now()))
     conn.commit()
@@ -89,6 +77,30 @@ def fetch_sorted_events():
         )
     return current_events
 
+@app.get("/top_events")
+def fetch_sorted_events():
+    results = conn.execute(te.select().order_by(te.c.end_date).limit(10))
+    conn.execute(te.delete().where(te.c.end_date < datetime.datetime.now()))
+    conn.commit()
+    current_events = []
+    now = datetime.datetime.now().date()
+    for result in results:
+        id, game_name, event_name, end_date, game_type, is_completed = result
+        time_left = (end_date - now).days
+
+        current_events.append(
+            {
+                "id": id,
+                "game": game_name,
+                "event": event_name,
+                "type": game_type,
+                "time_left": time_left,
+                "completed": is_completed,
+            }
+        )
+
+        
+    return current_events
 
 @app.get("/events/{id}")
 def fetch_event(id: int):
@@ -102,3 +114,7 @@ def fetch_event(id: int):
         "game_type": game_type,
         "is_completed": is_completed,
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app)
