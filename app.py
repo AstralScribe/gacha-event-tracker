@@ -21,9 +21,8 @@ app = FastAPI()
 
 @app.get("/", response_class=HTMLResponse)
 async def read_item(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="main.html"
-    )
+    return templates.TemplateResponse(request=request, name="main.html")
+
 
 @app.post("/add_events")
 def add_events(item_data: GameEvents):
@@ -77,9 +76,12 @@ def fetch_all_events():
         )
     return current_events
 
+
 @app.get("/top_events")
 def fetch_sorted_events():
-    results = conn.execute(te.select().order_by(te.c.end_date).where(te.c.is_completed != 1).limit(5))
+    results = conn.execute(
+        te.select().order_by(te.c.end_date).where(te.c.is_completed != 1).limit(5)
+    )
     conn.execute(te.delete().where(te.c.end_date < datetime.datetime.now()))
     conn.commit()
     current_events = []
@@ -99,8 +101,8 @@ def fetch_sorted_events():
             }
         )
 
-        
     return current_events
+
 
 @app.get("/events/{id}")
 def fetch_event(id: int):
@@ -115,6 +117,7 @@ def fetch_event(id: int):
         "is_completed": is_completed,
     }
 
+
 @app.delete("/{id}")
 def delete_event(id: int):
     conn.execute(te.delete().where(te.c.id == id))
@@ -124,4 +127,6 @@ def delete_event(id: int):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app)
+
