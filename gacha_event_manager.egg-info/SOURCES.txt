@@ -1,6 +1,0 @@
-pyproject.toml
-gacha_event_manager.egg-info/PKG-INFO
-gacha_event_manager.egg-info/SOURCES.txt
-gacha_event_manager.egg-info/dependency_links.txt
-gacha_event_manager.egg-info/requires.txt
-gacha_event_manager.egg-info/top_level.txt
